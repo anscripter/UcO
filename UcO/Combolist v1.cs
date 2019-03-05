@@ -8,6 +8,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -107,6 +108,26 @@ namespace UcO
             }
         }
 
+        private void Filter<T>(T[] items)
+        {
+            Control.CheckForIllegalCrossThreadCalls = false;
+            Task.Run(delegate 
+            {
+                for (int i = 0; i <= items.Length; i++)
+                {
+                    var t = Task.Run(() =>
+                    {
+                        T[] temp = items;
+                        if (temp.Contains(items[i]))
+                        {
+                            items[i] = default(T);
+                        }
+                    });
+                    t.Wait(50);
+                }
+            });
+        }
+
         private void EnableAll()
         {
             browse.Enabled = true;
@@ -137,6 +158,9 @@ namespace UcO
                     string[] parsed = File.ReadAllLines(ofd.FileName).Where(a => a.Contains(":")).ToArray();
                     browse.Text = "Scanning...";
                     location.Text = ofd.FileName;
+
+                    Filter(parsed);
+
                     accs = parsed;
                     browse.Text = "Success!";
                     scanned.Text = "Accounts Scanned: " + parsed.Count();
